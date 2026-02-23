@@ -21,6 +21,7 @@ public class EmailService {
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private static final int TOKEN_EXPIRY_HOURS = 48;
     private static final ZoneId EMAIL_DISPLAY_ZONE = ZoneId.of("Asia/Jakarta");
+    private static final ZoneId UTC = ZoneId.of("UTC");
 
     private final JavaMailSender mailSender;
     private final VerificationTokenService tokenService;
@@ -96,8 +97,10 @@ public class EmailService {
 
     public String buildSessionEmailDefaultSubject(Session session) {
         ZonedDateTime zdt = session.getStartDateTime().atZone(EMAIL_DISPLAY_ZONE);
-        String date = zdt.format(DateTimeFormatter.ofPattern("EEEE, MMM d 'at' h:mm a"));
-        return "Reminder: " + session.getTitle() + " — " + date;
+        String date = zdt.format(DateTimeFormatter.ofPattern("EEEE, MMM d 'at' HH:mm"));
+        String utcTime = session.getStartDateTime().atZone(UTC)
+                .format(DateTimeFormatter.ofPattern("HH:mm"));
+        return "Reminder: " + session.getTitle() + " — " + date + " Asia/Jakarta (GMT+7) / " + utcTime + " UTC";
     }
 
     public String buildSessionEmailDefaultBody(Session session) {
@@ -106,8 +109,11 @@ public class EmailService {
         sb.append("This is a friendly reminder about your upcoming session:\n\n");
         sb.append("📌 ").append(session.getTitle()).append("\n");
         ZonedDateTime zdt = session.getStartDateTime().atZone(EMAIL_DISPLAY_ZONE);
+        String utcTime = session.getStartDateTime().atZone(UTC)
+                .format(DateTimeFormatter.ofPattern("HH:mm"));
         sb.append("📅 ").append(zdt
-                .format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a z"))).append("\n");
+                .format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' HH:mm")))
+                .append(" Asia/Jakarta (GMT+7) / ").append(utcTime).append(" UTC\n");
         sb.append("⏱ ").append(session.getDurationMinutes()).append(" minutes\n");
 
         if (session.getZoomLink() != null && !session.getZoomLink().isBlank()) {
