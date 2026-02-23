@@ -3,18 +3,24 @@ package com.chitchatclub.api.controller;
 import com.chitchatclub.api.dto.request.CreateSessionRequest;
 import com.chitchatclub.api.dto.request.MoveRoomMemberRequest;
 import com.chitchatclub.api.dto.request.RoomMemberRequest;
+import com.chitchatclub.api.dto.request.SendSessionEmailRequest;
 import com.chitchatclub.api.dto.request.UpdateProficiencyOverrideRequest;
 import com.chitchatclub.api.dto.request.UpdateSessionRequest;
 import com.chitchatclub.api.dto.response.BreakoutRoomResponse;
+import com.chitchatclub.api.dto.response.EmailPreviewResponse;
 import com.chitchatclub.api.dto.response.FeedbackResponse;
 import com.chitchatclub.api.dto.response.RegistrationResponse;
 import com.chitchatclub.api.dto.response.SessionResponse;
 import com.chitchatclub.api.dto.response.UserResponse;
+import com.chitchatclub.api.entity.Registration;
+import com.chitchatclub.api.entity.Session;
 import com.chitchatclub.api.entity.User;
 import com.chitchatclub.api.exception.ResourceNotFoundException;
+import com.chitchatclub.api.repository.RegistrationRepository;
 import com.chitchatclub.api.repository.UserRepository;
 import com.chitchatclub.api.service.AttendanceService;
 import com.chitchatclub.api.service.BreakoutRoomService;
+import com.chitchatclub.api.service.EmailService;
 import com.chitchatclub.api.service.FeedbackService;
 import com.chitchatclub.api.service.SessionService;
 import com.chitchatclub.api.service.UserService;
@@ -40,20 +46,26 @@ public class AdminController {
     private final FeedbackService feedbackService;
     private final UserService userService;
     private final AttendanceService attendanceService;
+    private final EmailService emailService;
     private final UserRepository userRepository;
+    private final RegistrationRepository registrationRepository;
 
     public AdminController(SessionService sessionService,
                            BreakoutRoomService breakoutRoomService,
                            FeedbackService feedbackService,
                            UserService userService,
                            AttendanceService attendanceService,
-                           UserRepository userRepository) {
+                           EmailService emailService,
+                           UserRepository userRepository,
+                           RegistrationRepository registrationRepository) {
         this.sessionService = sessionService;
         this.breakoutRoomService = breakoutRoomService;
         this.feedbackService = feedbackService;
         this.userService = userService;
         this.attendanceService = attendanceService;
+        this.emailService = emailService;
         this.userRepository = userRepository;
+        this.registrationRepository = registrationRepository;
     }
 
     @GetMapping("/sessions")
@@ -194,6 +206,29 @@ public class AdminController {
         attendanceService.whitelistUser(id);
         User user = userService.getUserById(id);
         return ResponseEntity.ok(UserResponse.fromEntity(user, true));
+    }
+
+    @GetMapping("/sessions/{id}/email-preview")
+    public ResponseEntity<EmailPreviewResponse> getEmailPreview(@PathVariable UUID id) {
+        Session session = sessionService.getSessionEntity(id);
+        List<Registration> registrations = registrationRepository.findBySessionId(id);
+        return ResponseEntity.ok(new EmailPreviewResponse(
+                emailService.buildSessionEmailDefaultSubject(session),
+                emailService.buildSessionEmailDefaultBody(session),
+                registrations.size()
+        ));
+    }
+
+    @PostMapping("/sessions/{id}/send-email")
+    public ResponseEntity<Map<String, Integer>> sendSessionEmail(
+            @PathVariable UUID id,
+            @Valid @RequestBody SendSessionEmailRequest request) {
+        Session session = sessionService.getSessionEntity(id);
+        List<User> recipients = registrationRepository.findBySessionId(id).stream()
+                .map(Registration::getUser)
+                .toList();
+        int sent = emailService.sendSessionEmail(session, recipients, request.subject(), request.body());
+        return ResponseEntity.ok(Map.of("sent", sent));
     }
 
     private User resolveUser(Authentication authentication) {
