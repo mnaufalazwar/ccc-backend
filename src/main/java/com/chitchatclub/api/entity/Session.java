@@ -3,7 +3,7 @@ package com.chitchatclub.api.entity;
 import com.chitchatclub.api.entity.enums.SessionStatus;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -19,7 +19,8 @@ public class Session {
     @Column(length = 500)
     private String description;
 
-    private LocalDateTime startDateTime;
+    @Column(columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    private Instant startDateTime;
 
     private Integer durationMinutes;
 
@@ -38,12 +39,12 @@ public class Session {
     private String zoomMeetingId;
     private String zoomPassword;
 
-    @Column(updatable = false)
-    private LocalDateTime createdAt;
+    @Column(updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    private Instant createdAt;
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
     }
 
     public Session() {}
@@ -72,11 +73,11 @@ public class Session {
         this.description = description;
     }
 
-    public LocalDateTime getStartDateTime() {
+    public Instant getStartDateTime() {
         return startDateTime;
     }
 
-    public void setStartDateTime(LocalDateTime startDateTime) {
+    public void setStartDateTime(Instant startDateTime) {
         this.startDateTime = startDateTime;
     }
 
@@ -112,11 +113,11 @@ public class Session {
         this.createdBy = createdBy;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public Instant getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
     }
 

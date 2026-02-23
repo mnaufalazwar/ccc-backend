@@ -10,6 +10,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -18,6 +20,7 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
     private static final int TOKEN_EXPIRY_HOURS = 48;
+    private static final ZoneId EMAIL_DISPLAY_ZONE = ZoneId.of("Asia/Jakarta");
 
     private final JavaMailSender mailSender;
     private final VerificationTokenService tokenService;
@@ -92,8 +95,8 @@ public class EmailService {
     }
 
     public String buildSessionEmailDefaultSubject(Session session) {
-        String date = session.getStartDateTime()
-                .format(DateTimeFormatter.ofPattern("EEEE, MMM d 'at' h:mm a"));
+        ZonedDateTime zdt = session.getStartDateTime().atZone(EMAIL_DISPLAY_ZONE);
+        String date = zdt.format(DateTimeFormatter.ofPattern("EEEE, MMM d 'at' h:mm a"));
         return "Reminder: " + session.getTitle() + " — " + date;
     }
 
@@ -102,8 +105,9 @@ public class EmailService {
         sb.append("Hi there!\n\n");
         sb.append("This is a friendly reminder about your upcoming session:\n\n");
         sb.append("📌 ").append(session.getTitle()).append("\n");
-        sb.append("📅 ").append(session.getStartDateTime()
-                .format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a"))).append("\n");
+        ZonedDateTime zdt = session.getStartDateTime().atZone(EMAIL_DISPLAY_ZONE);
+        sb.append("📅 ").append(zdt
+                .format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a z"))).append("\n");
         sb.append("⏱ ").append(session.getDurationMinutes()).append(" minutes\n");
 
         if (session.getZoomLink() != null && !session.getZoomLink().isBlank()) {

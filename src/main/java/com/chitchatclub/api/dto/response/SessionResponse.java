@@ -3,14 +3,14 @@ package com.chitchatclub.api.dto.response;
 import com.chitchatclub.api.entity.Session;
 import com.chitchatclub.api.entity.enums.SessionStatus;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 public record SessionResponse(
         UUID id,
         String title,
         String description,
-        LocalDateTime startDateTime,
+        Instant startDateTime,
         Integer durationMinutes,
         Integer maxParticipants,
         SessionStatus status,
@@ -20,7 +20,7 @@ public record SessionResponse(
         String zoomLink,
         String zoomMeetingId,
         String zoomPassword,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
     public static SessionResponse fromEntity(Session session, long regCount) {
         return fromEntity(session, regCount, false);

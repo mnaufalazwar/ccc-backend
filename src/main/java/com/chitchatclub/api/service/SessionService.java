@@ -19,7 +19,9 @@ import com.chitchatclub.api.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -86,7 +88,7 @@ public class SessionService {
     @Transactional(readOnly = true)
     public List<SessionResponse> getUpcomingSessions() {
         return sessionRepository.findByStatusAndStartDateTimeAfterOrderByStartDateTimeAsc(
-                        SessionStatus.OPEN, LocalDateTime.now())
+                        SessionStatus.OPEN, Instant.now())
                 .stream()
                 .limit(3)
                 .map(s -> SessionResponse.fromEntity(s, registrationRepository.countBySessionId(s.getId())))
@@ -165,7 +167,7 @@ public class SessionService {
                 .map(c -> { try { return Integer.parseInt(c.getConfigValue()); } catch (NumberFormatException e) { return 24; } })
                 .orElse(24);
         if (session.getStartDateTime() != null
-                && session.getStartDateTime().minusHours(cutoffHours).isBefore(LocalDateTime.now())) {
+                && session.getStartDateTime().minus(cutoffHours, ChronoUnit.HOURS).isBefore(Instant.now())) {
             throw new BadRequestException(
                     "You cannot unregister within " + cutoffHours + " hours of the session start time.");
         }
